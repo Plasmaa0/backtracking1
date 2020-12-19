@@ -1,6 +1,6 @@
 import pygame
 from pygame.locals import *
-ARTI = 1
+ARTI = 0
 FPS = 24
 WIN_WIDTH = 501
 WIN_HEIGHT = 501
@@ -109,6 +109,8 @@ def turn():
             if(event.key == pygame.K_r):
                 player = [0, 0, 0]
                 enemy = [0, 0, 0]
+            if(event.key == pygame.K_c and sum(player) + sum(enemy) == 0):
+                who *= -1
             before = sum(player) + sum(enemy)
             if(who == 1):
                 mov = playermoves()
@@ -163,11 +165,19 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
     sc = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     pygame.display.set_caption(
-        "numpad: '1,2,3' red; '7,4,1' green; 'R'-reset; 'ESC'-exit")
+        "Game")
+    '''
+        Escape - выход
+        R - сброс
+        C - выбор, кто ходит первый (только если ни один ход не был сделан)
+        Numpad 7,4,1 - ход зеленой фишкой (верхней/средней/нижней)
+        Numpad 1,2,3 - ход красной фишкой (левой/средней/правой)
+        '''
     while(True):
         checkwin()
         turn()
         sc.fill(BACKGOUNDCOLOR)
+        BACKGOUNDCOLOR = tuple([int(i*0.9) for i in BACKGOUNDCOLOR])
         drawenv(sc)
         pygame.display.update()
         clock.tick(FPS)

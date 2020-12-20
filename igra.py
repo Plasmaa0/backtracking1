@@ -1,4 +1,5 @@
 import pygame
+import math
 
 
 class Board():
@@ -140,7 +141,7 @@ class Game():
                     mov = self.board.playermoves()
                     if(sum(mov) == 0):
                         self.board.isplayerturn = False
-                    if event.key == pygame.K_KP7 or event.key == pygame.K_KP8 or event.key == pygame.K_KP9:
+                    elif event.key == pygame.K_KP7 or event.key == pygame.K_KP8 or event.key == pygame.K_KP9:
                         self.board.player[0] += (1 * mov[0])
                     elif event.key == pygame.K_KP4 or event.key == pygame.K_KP5 or event.key == pygame.K_KP6:
                         self.board.player[1] += (1 * mov[1])
@@ -150,9 +151,14 @@ class Game():
                     mov = self.board.enemymoves()
                     if(sum(mov) == 0):
                         self.board.isplayerturn = True
-                    if(self.arti):
-                        ind = self.ai(mov)
-                        self.board.enemy[ind] += (1 * mov[ind])
+                    elif(self.arti):
+                        ind = self.ai()
+                        if(ind != -1):
+                            self.board.enemy[ind] += (1 * mov[ind])
+                        else:
+                            for i in range(len(mov)):
+                                if(mov[i] != 0):
+                                    self.board.enemy[i] += (1 * mov[i])
                     else:
                         if event.key == pygame.K_KP1 or event.key == pygame.K_KP4 or event.key == pygame.K_KP7:
                             self.board.enemy[0] += (1 * mov[0])
@@ -169,6 +175,7 @@ class Game():
                 self.sc.fill((0, 200, 0))
             else:
                 self.sc.fill((150, 0, 0))
+            pygame.time.delay(1000)
             pygame.display.update()
             pygame.time.delay(1000)
         self.board.player = [0, 0, 0]
@@ -180,15 +187,61 @@ class Game():
         elif(sum(self.board.enemy) == 12):
             self.reset(False)
 
-    def ai(self, possiblemoves: list) -> int:  # выбирает вариант с наибольшей дальностью хода
-        a = max(possiblemoves)
-        for i in range(len(possiblemoves)):
-            if possiblemoves[i] == a:
-                return i
+    def ai(self) -> int:  # выбирает вариант с наибольшей дальностью хода
+        scores = [10, -10, 0]
+
+        def minimax(board: Board, depth, ismaximizing):
+            def win(board: Board):
+                if sum(board.player) == 12:
+                    return 1
+                elif sum(board.enemy) == 12:
+                    return 0
+                else:
+                    return 2
+
+            result = win(board)
+            if(result != 0):
+                return scores[result]
+            if(ismaximizing):
+                bestscore = -math.inf
+                moves = board.enemymoves()
+                for i in range(3):
+                    if(moves[i] != 0):
+                        board.enemy[i] += (1 * moves[i])
+                        score = minimax(board, depth + 1, False)
+                        board.enemy[i] -= (1 * moves[i])
+                        bestscore = max(score, bestscore)
+                return bestscore
+            else:
+                bestscore = -math.inf
+                moves = board.playermoves()
+                for i in range(3):
+                    if(moves[i] != 0):
+                        board.enemy[i] += (1 * moves[i])
+                        score = minimax(board, depth + 1, False)
+                        board.enemy[i] -= (1 * moves[i])
+                        bestscore = min(score, bestscore)
+                return bestscore
+
+        bestscore = -math.inf
+        moves = self.board.enemymoves()
+        move = []
+        for i in range(3):
+            if(moves[i] != 0):
+                self.board.enemy[i] += (1 * moves[i])
+                score = minimax(self.board, 0, False)
+                self.board.enemy[i] -= (1 * moves[i])
+                if(score > bestscore):
+                    bestscore = score
+                    move.append(i)
+        if(len(move) != 0):
+            return max(move)
+        else:
+            return -1
 
 
 if __name__ == "__main__":
-    ARTI = False
+    ARTI = True  # int(input()) == 1
     WIN_WIDTH = 501
     WIN_HEIGHT = 501
     WHITE = (255, 255, 255)

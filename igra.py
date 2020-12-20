@@ -1,3 +1,16 @@
+"""
+Game
+Q - выход
+R - сброс на исходные позиции
+C - выбор, кто ходит первый (только если ни один ход не был сделан)
+Numpad 7,4,1 - ход зеленой фишкой (верхней/средней/нижней)
+Numpad 1,2,3 - ход красной фишкой (левой/средней/правой)
+Параметр ARTI (строка 248) включает/выключает игру компьютера за красные фишки
+Если игра компьютера включена, то после хода человека, чтобы увидеть ход компьютера, нажмите любую клавишу
+По умолчанию начинет зелёный, если хотите чтобы компьютер сделал первый ход, нажмите C
+Комментариев к коду нет, штука адская, сам разбираюсь.
+"""
+
 import pygame
 import math
 
@@ -86,18 +99,9 @@ class Board():
 
 
 class Game():
-    """
-    Game
-    Q - выход
-    R - сброс
-    C - выбор, кто ходит первый (только если ни один ход не был сделан)
-    Numpad 7,4,1 - ход зеленой фишкой (верхней/средней/нижней)
-    Numpad 1,2,3 - ход красной фишкой (левой/средней/правой)
-    """
-
     def __init__(self, artion: bool, width: int, height: int, playerstartpos: list, enemystartpos: list, isplayerturn: int):
         self.arti = artion
-        self.BACKGOUNDCOLOR = (0, 0, 0)
+        self.BACKGOUNDCOLOR = (18, 22, 22)
         self.board = Board(playerstartpos, enemystartpos, isplayerturn)
         self.sc = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
         pygame.display.set_caption(
@@ -119,9 +123,9 @@ class Game():
             pygame.draw.rect(
                 self.sc, RED, (140 + 100*i, 450 - self.board.enemy[i]*100, 10, 30))
         if(self.board.isplayerturn):
-            turncolor = (0, 200, 0)  # player
+            turncolor = GREEN  # player
         else:
-            turncolor = (150, 0, 0)  # enemy
+            turncolor = RED  # enemy
         pygame.draw.rect(self.sc, turncolor, (1, 401, 99, 99))
     # <!-- eslint-disable-next-line - ->  #убрать комментирование если бесит, что vscode выдает ошибки в обозначениях клавиш типа "pygame.K_ESCAPE", "pygame.K_c"
 
@@ -157,6 +161,7 @@ class Game():
                             self.board.enemy[ind] += (1 * mov[ind])
                         else:
                             for i in range(len(mov)):
+                                # костыль тк если комп-у остался один ход до победы то в рекурсии он упрется в то, что у него нет ходов
                                 if(mov[i] != 0):
                                     self.board.enemy[i] += (1 * mov[i])
                     else:
@@ -174,7 +179,7 @@ class Game():
             if(playerwins):
                 self.sc.fill((0, 200, 0))
             else:
-                self.sc.fill((150, 0, 0))
+                self.sc.fill((255, 113, 91))
             pygame.time.delay(1000)
             pygame.display.update()
             pygame.time.delay(1000)
@@ -187,7 +192,7 @@ class Game():
         elif(sum(self.board.enemy) == 12):
             self.reset(False)
 
-    def ai(self) -> int:  # выбирает вариант с наибольшей дальностью хода
+    def ai(self) -> int:  # https://youtu.be/trKjYdBASyQ
         scores = [10, -10, 0]
 
         def minimax(board: Board, depth, ismaximizing):
@@ -244,12 +249,12 @@ if __name__ == "__main__":
     ARTI = True  # int(input()) == 1
     WIN_WIDTH = 501
     WIN_HEIGHT = 501
-    WHITE = (255, 255, 255)
-    GREEN = (95, 232, 177)
-    RED = (214, 74, 49)
+    WHITE = (68, 43, 72)
+    GREEN = (101, 240, 42)  # (95, 232, 177)
+    RED = (184, 24, 0)  # (214, 74, 49)
 
-    startplayer = [0, 0, 0]  # 1
-    startenemy = [0, 0, 0]  # -1
+    startplayer = [0, 0, 0]
+    startenemy = [0, 0, 0]
     isplayerturn = True
     Game(ARTI, WIN_WIDTH, WIN_HEIGHT,
          startplayer, startenemy, isplayerturn)

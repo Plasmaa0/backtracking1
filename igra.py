@@ -5,7 +5,7 @@ R - сброс на исходные позиции
 C - выбор, кто ходит первый (только если ни один ход не был сделан)
 Numpad 7,4,1 - ход зеленой фишкой (верхней/средней/нижней)
 Numpad 1,2,3 - ход красной фишкой (левой/средней/правой)
-Параметр ARTI (в __main__) включает/выключает игру компьютера за красные фишки
+Параметр ARTI (строка 248) включает/выключает игру компьютера за красные фишки
 Если игра компьютера включена, то после хода человека, чтобы увидеть ход компьютера, нажмите любую клавишу
 По умолчанию начинет зелёный, если хотите чтобы компьютер сделал первый ход, нажмите C
 Комментариев к коду нет, штука адская, сам разбираюсь.
@@ -13,7 +13,6 @@ Numpad 1,2,3 - ход красной фишкой (левой/средней/п�
 
 import pygame
 import math
-import random
 
 
 class Board():
@@ -105,18 +104,11 @@ class Game():
         self.BACKGOUNDCOLOR = (18, 22, 22)
         self.board = Board(playerstartpos, enemystartpos, isplayerturn)
         self.sc = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
-        self.icon = pygame.Surface((10, 10))
-        for i in range(10):
-            for j in range(10):
-                self.icon.set_at((i, j), (random.randint(
-                    0, 255), random.randint(0, 255), random.randint(0, 255)))
-        pygame.display.set_icon(self.icon)
         pygame.display.set_caption(
             "Game")
-        playing = True
-        while(playing):
+        while(True):
             self.checkwin()
-            playing = self.playturn()
+            self.playturn()
             self.sc.fill(self.BACKGOUNDCOLOR)
             self.drawenv()
             pygame.display.update()
@@ -138,44 +130,32 @@ class Game():
     # <!-- eslint-disable-next-line - ->  #убрать комментирование если бесит, что vscode выдает ошибки в обозначениях клавиш типа "pygame.K_ESCAPE", "pygame.K_c"
 
     def playturn(self):
-        before = sum(self.board.player) + sum(self.board.enemy)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
-            elif(event.type == pygame.KEYDOWN):
-                if(event.key in [pygame.K_q, pygame.K_ESCAPE]):
+                exit(0)
+            elif event.type == pygame.KEYDOWN:
+                if(event.key == pygame.K_q):
                     pygame.quit()
-                elif(event.key == pygame.K_r):
+                if(event.key == pygame.K_r):
                     self.reset(None)
-                    return True
-                elif(event.key == pygame.K_c and sum(self.board.player) + sum(self.board.enemy) == 0):
+                if(event.key == pygame.K_c and sum(self.board.player) + sum(self.board.enemy) == 0):
                     self.board.isplayerturn = not self.board.isplayerturn
-                    return True
-                elif(self.board.isplayerturn):
+                before = sum(self.board.player) + sum(self.board.enemy)
+                if(self.board.isplayerturn):
                     mov = self.board.playermoves()
                     if(sum(mov) == 0):
                         self.board.isplayerturn = False
-                    elif event.key in [pygame.K_KP7, pygame.K_KP8, pygame.K_KP9, pygame.K_1]:
+                    elif event.key == pygame.K_KP7 or event.key == pygame.K_KP8 or event.key == pygame.K_KP9:
                         self.board.player[0] += (1 * mov[0])
-                    elif event.key in [pygame.K_KP4, pygame.K_KP5, pygame.K_KP6, pygame.K_2]:
+                    elif event.key == pygame.K_KP4 or event.key == pygame.K_KP5 or event.key == pygame.K_KP6:
                         self.board.player[1] += (1 * mov[1])
-                    elif event.key in [pygame.K_KP1, pygame.K_KP2, pygame.K_KP3, pygame.K_3]:
+                    elif event.key == pygame.K_KP1 or event.key == pygame.K_KP2 or event.key == pygame.K_KP3:
                         self.board.player[2] += (1 * mov[2])
-                elif(not self.arti):
-                    mov = self.board.enemymoves()
-                    if(sum(mov) == 0):
-                        self.board.isplayerturn = True
-                    if event.key in [pygame.K_KP1, pygame.K_KP4, pygame.K_KP7, pygame.K_1]:
-                        self.board.enemy[0] += (1 * mov[0])
-                    elif event.key in [pygame.K_KP2, pygame.K_KP5, pygame.K_KP8, pygame.K_2]:
-                        self.board.enemy[1] += (1 * mov[1])
-                    elif event.key in [pygame.K_KP3, pygame.K_KP6, pygame.K_KP9, pygame.K_3]:
-                        self.board.enemy[2] += (1 * mov[2])
                 else:
                     mov = self.board.enemymoves()
                     if(sum(mov) == 0):
                         self.board.isplayerturn = True
-                    else:
+                    elif(self.arti):
                         ind = self.ai()
                         if(ind != -1):
                             self.board.enemy[ind] += (1 * mov[ind])
@@ -184,20 +164,25 @@ class Game():
                                 # костыль тк если комп-у остался один ход до победы то в рекурсии он упрется в то, что у него нет ходов
                                 if(mov[i] != 0):
                                     self.board.enemy[i] += (1 * mov[i])
-        if(sum(self.board.player) + sum(self.board.enemy) != before):
-            self.board.isplayerturn = not self.board.isplayerturn
-        return True
+                    else:
+                        if event.key == pygame.K_KP1 or event.key == pygame.K_KP4 or event.key == pygame.K_KP7:
+                            self.board.enemy[0] += (1 * mov[0])
+                        elif event.key == pygame.K_KP2 or event.key == pygame.K_KP5 or event.key == pygame.K_KP8:
+                            self.board.enemy[1] += (1 * mov[1])
+                        elif event.key == pygame.K_KP3 or event.key == pygame.K_KP6 or event.key == pygame.K_KP9:
+                            self.board.enemy[2] += (1 * mov[2])
+                if(sum(self.board.player) + sum(self.board.enemy) != before):
+                    self.board.isplayerturn = not self.board.isplayerturn
 
     def reset(self, playerwins):
         if(playerwins != None):
             if(playerwins):
-                self.sc.fill(GREEN)
+                self.sc.fill((0, 200, 0))
             else:
-                self.sc.fill(RED)
+                self.sc.fill((255, 113, 91))
             pygame.time.delay(1000)
             pygame.display.update()
             pygame.time.delay(1000)
-        self.board.isplayerturn = True
         self.board.player = [0, 0, 0]
         self.board.enemy = [0, 0, 0]
 
@@ -207,53 +192,58 @@ class Game():
         elif(sum(self.board.enemy) == 12):
             self.reset(False)
 
-    def ai(self) -> int:  # https://youtu.be/trKjYdBASyQ
-        scores = [10, -10, 0]
+    def win(self, board: Board):
+        if sum(board.player) == 12:
+            return False
+        elif sum(board.enemy) == 12:
+            return True
+        else:
+            return None
 
-        def minimax(board: Board, depth, ismaximizing):
-            def win(board: Board):
-                if sum(board.player) == 12:
-                    return 1
-                elif sum(board.enemy) == 12:
-                    return 0
-                else:
-                    return 2
-
-            result = win(board)
-            if(result != 0):
-                return scores[result]
-            if(ismaximizing):
-                bestscore = -math.inf
-                moves = board.enemymoves()
-                for i in range(3):
-                    if(moves[i] != 0):
-                        board.enemy[i] += (1 * moves[i])
-                        score = minimax(board, depth + 1, False)/depth
-                        board.enemy[i] -= (1 * moves[i])
-                        bestscore = max(score, bestscore)
-                return bestscore
+    def minimax(self, brd: Board, depth, ismaximizing):
+        result = self.win(brd)
+        if(depth > 10):
+            return 0
+        if(result != None):
+            if(result):
+                return 10
             else:
-                bestscore = -math.inf
-                moves = board.playermoves()
-                for i in range(3):
-                    if(moves[i] != 0):
-                        board.enemy[i] += (1 * moves[i])
-                        score = minimax(board, depth + 1, True)/depth
-                        board.enemy[i] -= (1 * moves[i])
-                        bestscore = min(score, bestscore)
-                return bestscore
+                return -10
+        if(ismaximizing):
+            bestscore = -math.inf
+            moves = brd.enemymoves()
+            for i in range(3):
+                if(moves[i] != 0):
+                    brd.enemy[i] += (1 * moves[i])
+                    score = self.minimax(brd, depth + 1, False)
+                    brd.enemy[i] -= (1 * moves[i])
+                    bestscore = max(score, bestscore)
+            return bestscore
+        else:
+            bestscore = math.inf
+            moves = brd.playermoves()
+            for i in range(3):
+                if(moves[i] != 0):
+                    brd.player[i] += (1 * moves[i])
+                    score = self.minimax(brd, depth + 1, True)
+                    brd.player[i] -= (1 * moves[i])
+                    bestscore = min(score, bestscore)
+            return bestscore
 
+    def ai(self) -> int:  # https://youtu.be/trKjYdBASyQ
         bestscore = -math.inf
         moves = self.board.enemymoves()
-        move = -1
+        move = int()
         for i in range(3):
             if(moves[i] != 0):
                 self.board.enemy[i] += (1 * moves[i])
-                score = minimax(self.board, 1, False)
+                score = self.minimax(self.board, 0, False)
                 self.board.enemy[i] -= (1 * moves[i])
+                print("score", i+1, score)
                 if(score > bestscore):
                     bestscore = score
                     move = i
+        print("\n")
         return move
 
 

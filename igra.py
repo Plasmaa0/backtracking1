@@ -255,7 +255,7 @@ class Game():
         elif(score == 0 and self.articolor != (0, 100, 0)):
             return (200, 200, 0)
         elif (score == -10 and self.articolor != (0, 100, 0) or self.articolor != (200, 200, 0)):
-            return = (100, 0, 0)
+            return (100, 0, 0)
 
     def ai(self) -> int:  # https://youtu.be/trKjYdBASyQ
         bestscore = -math.inf

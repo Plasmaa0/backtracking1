@@ -146,7 +146,6 @@ class Game():
             turncolor = RED  # enemy
         pygame.draw.rect(self.sc, turncolor, (1, 401, 99, 99))
 
-    # <!-- eslint-disable-next-line - ->  #убрать комментирование если бесит, что vscode выдает ошибки в обозначениях клавиш типа "pygame.K_ESCAPE", "pygame.K_c"
     def playturn(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -154,6 +153,9 @@ class Game():
             elif event.type == pygame.KEYDOWN:
                 if(event.key == pygame.K_q):
                     pygame.quit()
+                    print("Closing. Press any key.")
+                    input()
+                    exit(0)
                 if(event.key == pygame.K_r):
                     self.reset(None)
                 if(event.key == pygame.K_c and sum(self.board.player) + sum(self.board.enemy) == 0):
@@ -209,8 +211,10 @@ class Game():
         if(playerwins != None):
             if(playerwins):
                 self.sc.fill(GREEN)
+                print("Green won")
             else:
                 self.sc.fill(RED)
+                print("Red won")
             pygame.time.delay(1000)
             pygame.display.update()
             pygame.time.delay(1000)
@@ -234,10 +238,10 @@ class Game():
         else:
             return None
 
-    def minimax(self, brd: Board, depth, ismaximizing):
+    def minimax(self, brd: Board, depth, ismaximizing, alpha, beta):
         result = self.win(brd)
-        if(depth > 11):  # @DEPTH
-            return 0
+        # if(depth > 11):  # @DEPTH
+        #     return 0
         if(result != None):
             if(result):
                 return 1
@@ -249,9 +253,12 @@ class Game():
             for i in range(3):
                 if(moves[i] != 0):
                     brd.enemy[i] += (1 * moves[i])
-                    score = self.minimax(brd, depth + 1, False)
+                    score = self.minimax(brd, depth + 1, False, alpha, beta)
                     brd.enemy[i] -= (1 * moves[i])
                     bestscore = max(score, bestscore)
+                    alpha = max(alpha, bestscore)
+                    if(beta <= alpha):
+                        break
             return bestscore
         else:
             bestscore = math.inf
@@ -259,9 +266,12 @@ class Game():
             for i in range(3):
                 if(moves[i] != 0):
                     brd.player[i] += (1 * moves[i])
-                    score = self.minimax(brd, depth + 1, True)
+                    score = self.minimax(brd, depth + 1, True, alpha, beta)
                     brd.player[i] -= (1 * moves[i])
                     bestscore = min(score, bestscore)
+                    beta = min(beta, bestscore)
+                    if(beta <= alpha):
+                        break
             return bestscore
 
     def scoretocolor(self, score, isenemy: bool):
@@ -294,7 +304,8 @@ class Game():
             for i in range(3):
                 if(moves[i] != 0):
                     self.board.player[i] += (1 * moves[i])
-                    score = self.minimax(self.board, 0, False)
+                    score = self.minimax(
+                        self.board, 0, False, -math.inf, math.inf)
                     self.board.player[i] -= (1 * moves[i])
                     print(i, " score: ", score)
                     self.arti2color = self.scoretocolor(score, False)
@@ -311,7 +322,8 @@ class Game():
             for i in range(3):
                 if(moves[i] != 0):
                     self.board.enemy[i] += (1 * moves[i])
-                    score = self.minimax(self.board, 0, False)
+                    score = self.minimax(
+                        self.board, 0, False, -math.inf, math.inf)
                     self.board.enemy[i] -= (1 * moves[i])
                     print(i, " score: ", score)
                     self.articolor = self.scoretocolor(score, True)

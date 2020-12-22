@@ -1,27 +1,18 @@
+# -*- coding: cp1251 -*-
+import math
+import pygame
 """
-Game
-Q - выход
-R - сброс на исходные позиции
-C - выбор, кто ходит первый (только если ни один ход не был сделан)
-Numpad 7,4,1 - ход зеленой фишкой (верхней/средней/нижней)
-Numpad 1,2,3 - ход красной фишкой (левой/средней/правой)
-Параметр ARTI (в __main__) включает/выключает игру компьютера за красные фишки
-В нижнем левом квадрате цветом отображается игрок, который сейчас ходит
-Если игра компьютера включена, то после хода человека, чтобы увидеть ход компьютера, нажмите любую клавишу
-По умолчанию начинет зелёный, если хотите чтобы компьютер сделал первый ход, нажмите C
 Комментариев к коду нет, штука адская, сам разбираюсь.
+Параметр ARTI(в __main__) включает/выключает игру компьютера за красные фишки
 
 upd: кажется minimax начал что-то считать, в нижнем правом квадрате выводится прогноз алгоритма:
     зеленый - выигрыш
-    желтый - пока неизвестно (возможно только на первых ходах, тк глубина рекурсивного просчета ограничена)
+    желтый - пока неизвестно(возможно только на первых ходах, тк глубина рекурсивного просчета ограничена)
     красный - проигрыш
-!! если вылетает, попробуйте уменьшить число с которым сравнивается depth - это глубина просчёта ходов (искать "@DEPTH")
+!! если вылетает, попробуйте уменьшить число с которым сравнивается depth - это глубина просчёта ходов(искать "@DEPTH")
 
 в планах разобраться с альфа-бета отсечением
 """
-
-import pygame
-import math
 
 
 class Board():
@@ -124,7 +115,7 @@ class Game():
             self.sc.fill(self.BACKGOUNDCOLOR)
             self.drawenv()
             pygame.display.update()
-            pygame.time.delay(1000)
+            pygame.time.delay(100)
 
     def drawenv(self):
         for i in range(6):
@@ -168,23 +159,12 @@ class Game():
                 if(event.key == pygame.K_c and sum(self.board.player) + sum(self.board.enemy) == 0):
                     self.board.isplayerturn = not self.board.isplayerturn
                 before = sum(self.board.player) + sum(self.board.enemy)
-                if(self.board.isplayerturn and not self.arti2):
+                if(self.board.isplayerturn):
                     mov = self.board.playermoves()
                     if(sum(mov) == 0):
                         self.board.isplayerturn = False
                         self.number += 1
-                    elif event.key in [pygame.K_KP7, pygame.K_KP8, pygame.K_KP9, pygame.K_1]:
-                        self.board.player[0] += (1 * mov[0])
-                    elif event.key in [pygame.K_KP4, pygame.K_KP5, pygame.K_KP6, pygame.K_2]:
-                        self.board.player[1] += (1 * mov[1])
-                    elif event.key in [pygame.K_KP1, pygame.K_KP2, pygame.K_KP3, pygame.K_3]:
-                        self.board.player[2] += (1 * mov[2])
-                elif(self.board.isplayerturn and self.arti2):
-                    mov = self.board.playermoves()
-                    if(sum(mov) == 0):
-                        self.board.isplayerturn = False
-                        self.number += 1
-                    elif(self.arti):
+                    if(self.arti2):
                         ind = self.ai(True)
                         if(ind != -1):
                             self.board.player[ind] += (1 * mov[ind])
@@ -193,12 +173,19 @@ class Game():
                                 # костыль тк если комп-у остался один ход до победы то в рекурсии он упрется в то, что у него нет ходов
                                 if(mov[i] != 0):
                                     self.board.player[i] += (1 * mov[i])
+                    else:
+                        if event.key in [pygame.K_KP7, pygame.K_KP8, pygame.K_KP9, pygame.K_1]:
+                            self.board.player[0] += (1 * mov[0])
+                        elif event.key in [pygame.K_KP4, pygame.K_KP5, pygame.K_KP6, pygame.K_2]:
+                            self.board.player[1] += (1 * mov[1])
+                        elif event.key in [pygame.K_KP1, pygame.K_KP2, pygame.K_KP3, pygame.K_3]:
+                            self.board.player[2] += (1 * mov[2])
                 else:
                     mov = self.board.enemymoves()
                     if(sum(mov) == 0):
                         self.board.isplayerturn = True
                         self.number += 1
-                    elif(self.arti):
+                    if(self.arti):
                         ind = self.ai()
                         if(ind != -1):
                             self.board.enemy[ind] += (1 * mov[ind])
@@ -229,6 +216,7 @@ class Game():
             pygame.time.delay(1000)
         self.number = 0
         self.articolor = self.BACKGOUNDCOLOR
+        self.arti2olor = self.BACKGOUNDCOLOR
         self.board.player = [0, 0, 0]
         self.board.enemy = [0, 0, 0]
 
@@ -276,15 +264,25 @@ class Game():
                     bestscore = min(score, bestscore)
             return bestscore
 
-    def scoretocolor(self, score):
-        if(score == 1):
-            return (0, 100, 0)
-        elif(score == 0 and self.articolor != (0, 100, 0)):
-            return (200, 200, 0)
-        elif (score == -1 and self.articolor != (0, 100, 0) or self.articolor != (200, 200, 0)):
-            return (100, 0, 0)
+    def scoretocolor(self, score, isenemy: bool):
+        if(isenemy):
+            if(score == 1):
+                return (0, 100, 0)
+            elif(score == 0 and self.articolor != (0, 100, 0)):
+                return (200, 200, 0)
+            elif (score == -1 and self.articolor != (0, 100, 0) or self.articolor != (200, 200, 0)):
+                return (100, 0, 0)
+            else:
+                return (100, 0, 0)
         else:
-            return (100, 0, 0)
+            if(score == 1):
+                return (0, 100, 0)
+            elif(score == 0 and self.arti2color != (0, 100, 0)):
+                return (200, 200, 0)
+            elif (score == -1 and self.arti2color != (0, 100, 0) or self.arti2color != (200, 200, 0)):
+                return (100, 0, 0)
+            else:
+                return (100, 0, 0)
 
     def ai(self, pl=False) -> int:  # https://youtu.be/trKjYdBASyQ
         if(pl):
@@ -299,7 +297,7 @@ class Game():
                     score = self.minimax(self.board, 0, False)
                     self.board.player[i] -= (1 * moves[i])
                     print(i, " score: ", score)
-                    self.arti2color = self.scoretocolor(score)
+                    self.arti2color = self.scoretocolor(score, False)
                     if(score > bestscore):
                         bestscore = score
                         move = i
@@ -316,7 +314,7 @@ class Game():
                     score = self.minimax(self.board, 0, False)
                     self.board.enemy[i] -= (1 * moves[i])
                     print(i, " score: ", score)
-                    self.articolor = self.scoretocolor(score)
+                    self.articolor = self.scoretocolor(score, True)
                     if(score > bestscore):
                         bestscore = score
                         move = i
@@ -325,8 +323,11 @@ class Game():
 
 
 if __name__ == "__main__":
-    ARTI = True  # int(input()) == 1
-    ARTI2 = False
+    print('Game:\nQ - exit\nR - reset\nC - choose who plays first\nNumpad 7, 4, 1 - green turn(upper/middle/lower)\nNumpad 1, 2, 3 - red turn(left/middle/right)\nColor of lower left square shows who\'s turn now \ncolor of lower right square shows chance of red to win(if ai enabled for red)\ncolor of upper left square shows chance of green to win (if ai enabled for green)\nPress any key to see computer\'s turn\nGreen plays first as default. To change it press \'C\' \nSet ai for red and green(1 - yes, 0 - no)\n')
+    print("ai play for red(1/0): ")
+    ARTI = int(input()) == 1
+    print("ai play for green(1/0): ")
+    ARTI2 = int(input()) == 1
     WIN_WIDTH = 501
     WIN_HEIGHT = 501
     WHITE = (68, 43, 72)

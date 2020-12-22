@@ -108,13 +108,15 @@ class Board():
 
 
 class Game():
-    def __init__(self, artion: bool, width: int, height: int, playerstartpos: list, enemystartpos: list, isplayerturn: int):
+    def __init__(self, artion: bool, arti2on: bool, width: int, height: int, playerstartpos: list, enemystartpos: list, isplayerturn: int):
         self.number = 0
         self.arti = artion
+        self.arti2 = arti2on
         self.BACKGOUNDCOLOR = (18, 22, 22)
         self.board = Board(playerstartpos, enemystartpos, isplayerturn)
         self.sc = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
         self.articolor = self.BACKGOUNDCOLOR
+        self.arti2color = self.BACKGOUNDCOLOR
         pygame.display.set_caption("Game")
         while(True):
             self.checkwin()
@@ -122,6 +124,7 @@ class Game():
             self.sc.fill(self.BACKGOUNDCOLOR)
             self.drawenv()
             pygame.display.update()
+            pygame.time.delay(1000)
 
     def drawenv(self):
         for i in range(6):
@@ -139,13 +142,20 @@ class Game():
                 color = self.articolor
             pygame.draw.rect(
                 self.sc, color, (401, 401, 99, 99))
+        if(self.arti2):
+            if(self.board.player[i] == 4):
+                color = self.BACKGOUNDCOLOR
+            else:
+                color = self.arti2color
+            pygame.draw.rect(
+                self.sc, color, (1, 1, 99, 99))
         if(self.board.isplayerturn):
             turncolor = GREEN  # player
         else:
             turncolor = RED  # enemy
         pygame.draw.rect(self.sc, turncolor, (1, 401, 99, 99))
-    # <!-- eslint-disable-next-line - ->  #убрать комментирование если бесит, что vscode выдает ошибки в обозначениях клавиш типа "pygame.K_ESCAPE", "pygame.K_c"
 
+    # <!-- eslint-disable-next-line - ->  #убрать комментирование если бесит, что vscode выдает ошибки в обозначениях клавиш типа "pygame.K_ESCAPE", "pygame.K_c"
     def playturn(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -158,17 +168,31 @@ class Game():
                 if(event.key == pygame.K_c and sum(self.board.player) + sum(self.board.enemy) == 0):
                     self.board.isplayerturn = not self.board.isplayerturn
                 before = sum(self.board.player) + sum(self.board.enemy)
-                if(self.board.isplayerturn):
+                if(self.board.isplayerturn and not self.arti2):
                     mov = self.board.playermoves()
                     if(sum(mov) == 0):
                         self.board.isplayerturn = False
                         self.number += 1
-                    elif event.key == pygame.K_KP7 or event.key == pygame.K_KP8 or event.key == pygame.K_KP9:
+                    elif event.key in [pygame.K_KP7, pygame.K_KP8, pygame.K_KP9, pygame.K_1]:
                         self.board.player[0] += (1 * mov[0])
-                    elif event.key == pygame.K_KP4 or event.key == pygame.K_KP5 or event.key == pygame.K_KP6:
+                    elif event.key in [pygame.K_KP4, pygame.K_KP5, pygame.K_KP6, pygame.K_2]:
                         self.board.player[1] += (1 * mov[1])
-                    elif event.key == pygame.K_KP1 or event.key == pygame.K_KP2 or event.key == pygame.K_KP3:
+                    elif event.key in [pygame.K_KP1, pygame.K_KP2, pygame.K_KP3, pygame.K_3]:
                         self.board.player[2] += (1 * mov[2])
+                elif(self.board.isplayerturn and self.arti2):
+                    mov = self.board.playermoves()
+                    if(sum(mov) == 0):
+                        self.board.isplayerturn = False
+                        self.number += 1
+                    elif(self.arti):
+                        ind = self.ai(True)
+                        if(ind != -1):
+                            self.board.player[ind] += (1 * mov[ind])
+                        else:
+                            for i in range(len(mov)):
+                                # костыль тк если комп-у остался один ход до победы то в рекурсии он упрется в то, что у него нет ходов
+                                if(mov[i] != 0):
+                                    self.board.player[i] += (1 * mov[i])
                 else:
                     mov = self.board.enemymoves()
                     if(sum(mov) == 0):
@@ -184,11 +208,11 @@ class Game():
                                 if(mov[i] != 0):
                                     self.board.enemy[i] += (1 * mov[i])
                     else:
-                        if event.key == pygame.K_KP1 or event.key == pygame.K_KP4 or event.key == pygame.K_KP7:
+                        if event.key in [pygame.K_KP1, pygame.K_KP4, pygame.K_KP7, pygame.K_1]:
                             self.board.enemy[0] += (1 * mov[0])
-                        elif event.key == pygame.K_KP2 or event.key == pygame.K_KP5 or event.key == pygame.K_KP8:
+                        elif event.key in [pygame.K_KP2, pygame.K_KP5, pygame.K_KP8, pygame.K_2]:
                             self.board.enemy[1] += (1 * mov[1])
-                        elif event.key == pygame.K_KP3 or event.key == pygame.K_KP6 or event.key == pygame.K_KP9:
+                        elif event.key in [pygame.K_KP3, pygame.K_KP6, pygame.K_KP9, pygame.K_3]:
                             self.board.enemy[2] += (1 * mov[2])
                 if(sum(self.board.player) + sum(self.board.enemy) != before):
                     self.number += 1
@@ -228,9 +252,9 @@ class Game():
             return 0
         if(result != None):
             if(result):
-                return 10
+                return 1
             else:
-                return -10
+                return -1
         if(ismaximizing):
             bestscore = -math.inf
             moves = brd.enemymoves()
@@ -253,33 +277,56 @@ class Game():
             return bestscore
 
     def scoretocolor(self, score):
-        if(score == 10):
+        if(score == 1):
             return (0, 100, 0)
         elif(score == 0 and self.articolor != (0, 100, 0)):
             return (200, 200, 0)
-        elif (score == -10 and self.articolor != (0, 100, 0) or self.articolor != (200, 200, 0)):
+        elif (score == -1 and self.articolor != (0, 100, 0) or self.articolor != (200, 200, 0)):
             return (100, 0, 0)
         else:
             return (100, 0, 0)
 
-    def ai(self) -> int:  # https://youtu.be/trKjYdBASyQ
-        bestscore = -math.inf
-        moves = self.board.enemymoves()
-        move = int()
-        for i in range(3):
-            if(moves[i] != 0):
-                self.board.enemy[i] += (1 * moves[i])
-                score = self.minimax(self.board, 0, False)
-                self.board.enemy[i] -= (1 * moves[i])
-                self.articolor = self.scoretocolor(score)
-                if(score > bestscore):
-                    bestscore = score
-                    move = i
-        return move
+    def ai(self, pl=False) -> int:  # https://youtu.be/trKjYdBASyQ
+        if(pl):
+
+            bestscore = -math.inf
+            moves = self.board.playermoves()
+            move = int()
+            print("Green:")
+            for i in range(3):
+                if(moves[i] != 0):
+                    self.board.player[i] += (1 * moves[i])
+                    score = self.minimax(self.board, 0, False)
+                    self.board.player[i] -= (1 * moves[i])
+                    print(i, " score: ", score)
+                    self.arti2color = self.scoretocolor(score)
+                    if(score > bestscore):
+                        bestscore = score
+                        move = i
+            print("\n")
+            return move
+        else:
+            bestscore = -math.inf
+            moves = self.board.enemymoves()
+            move = int()
+            print("Red:")
+            for i in range(3):
+                if(moves[i] != 0):
+                    self.board.enemy[i] += (1 * moves[i])
+                    score = self.minimax(self.board, 0, False)
+                    self.board.enemy[i] -= (1 * moves[i])
+                    print(i, " score: ", score)
+                    self.articolor = self.scoretocolor(score)
+                    if(score > bestscore):
+                        bestscore = score
+                        move = i
+            print("\n")
+            return move
 
 
 if __name__ == "__main__":
     ARTI = True  # int(input()) == 1
+    ARTI2 = False
     WIN_WIDTH = 501
     WIN_HEIGHT = 501
     WHITE = (68, 43, 72)
@@ -288,5 +335,5 @@ if __name__ == "__main__":
     startplayer = [0, 0, 0]
     startenemy = [0, 0, 0]
     isplayerturn = True
-    Game(ARTI, WIN_WIDTH, WIN_HEIGHT,
+    Game(ARTI, ARTI2, WIN_WIDTH, WIN_HEIGHT,
          startplayer, startenemy, isplayerturn)

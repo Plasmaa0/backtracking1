@@ -1,6 +1,8 @@
 # -*- coding: cp1251 -*-
 import math
 import pygame
+import threading
+import queue
 """
 Комментариев к коду нет, штука адская, сам разбираюсь.
 Параметр ARTI(в __main__) включает/выключает игру компьютера за красные фишки
@@ -126,20 +128,20 @@ class Game():
                 self.sc, GREEN, (self.board.player[i]*100 + 45, 140 + 100*i, 30, 10))
             pygame.draw.rect(
                 self.sc, RED, (140 + 100*i, 440 - self.board.enemy[i]*100, 10, 30))
-        if(self.arti):
-            if(self.board.enemy[i] == 4):
-                color = self.BACKGOUNDCOLOR
-            else:
-                color = self.articolor
-            pygame.draw.rect(
-                self.sc, color, (401, 401, 99, 99))
-        if(self.arti2):
-            if(self.board.player[i] == 4):
-                color = self.BACKGOUNDCOLOR
-            else:
-                color = self.arti2color
-            pygame.draw.rect(
-                self.sc, color, (1, 1, 99, 99))
+            if(self.arti):
+                if(self.board.enemy[i] == 4):
+                    color = self.BACKGOUNDCOLOR
+                else:
+                    color = self.articolor
+                pygame.draw.rect(
+                    self.sc, color, (401, 401, 99, 99))
+            if(self.arti2):
+                if(self.board.player[i] == 4):
+                    color = self.BACKGOUNDCOLOR
+                else:
+                    color = self.arti2color
+                pygame.draw.rect(
+                    self.sc, color, (1, 1, 99, 99))
         if(self.board.isplayerturn):
             turncolor = GREEN  # player
         else:
@@ -231,12 +233,21 @@ class Game():
             self.reset(False)
 
     def win(self, board: Board):
-        if sum(board.player) == 12:
-            return False
-        elif sum(board.enemy) == 12:
-            return True
+        if(not self.board.isplayerturn):
+            if sum(board.player) == 12:
+                return False
+            elif sum(board.enemy) == 12:
+                return True
+            else:
+                return None
         else:
-            return None
+            if sum(board.player) == 12:
+                return True
+            elif sum(board.enemy) == 12:
+                return False
+            else:
+                return None
+    # @njit(fastmath=True)
 
     def minimax(self, brd: Board, depth, ismaximizing, alpha, beta):
         result = self.win(brd)
@@ -295,8 +306,9 @@ class Game():
                 return (100, 0, 0)
 
     def ai(self, pl=False) -> int:  # https://youtu.be/trKjYdBASyQ
+        que = queue.Queue()
+        threads = []
         if(pl):
-
             bestscore = -math.inf
             moves = self.board.playermoves()
             move = int()
@@ -304,15 +316,22 @@ class Game():
             for i in range(3):
                 if(moves[i] != 0):
                     self.board.player[i] += (1 * moves[i])
-                    score = self.minimax(
-                        self.board, 0, False, -math.inf, math.inf)
+                    # score = self.minimax(
+                    #     self.board, 0, False, -math.inf, math.inf)
+                    thr = threading.Thread(target=lambda que, *args: que.put((self.minimax(
+                        *args), i)), args=(que, self.board, 0, False, -math.inf, math.inf))
+                    threads.append(thr)
+                    thr.start()
+                    thr.join()
                     self.board.player[i] -= (1 * moves[i])
-                    print(i, " score: ", score)
-                    self.arti2color = self.scoretocolor(score, False)
-                    if(score > bestscore):
-                        bestscore = score
-                        move = i
-            print("\n")
+            while(not que.empty()):
+                score, i = que.get()
+                print(i, " score: ", score)
+                self.arti2color = self.scoretocolor(score, False)
+                if(score > bestscore):
+                    bestscore = score
+                    move = i
+            print("\n", end='')
             return move
         else:
             bestscore = -math.inf
@@ -322,15 +341,22 @@ class Game():
             for i in range(3):
                 if(moves[i] != 0):
                     self.board.enemy[i] += (1 * moves[i])
-                    score = self.minimax(
-                        self.board, 0, False, -math.inf, math.inf)
+                    # score = self.minimax(
+                    #     self.board, 0, True, -math.inf, math.inf)
+                    thr = threading.Thread(target=lambda que, *args: que.put((self.minimax(
+                        *args), i)), args=(que, self.board, 0, True, -math.inf, math.inf))
+                    threads.append(thr)
+                    thr.start()
+                    thr.join()
                     self.board.enemy[i] -= (1 * moves[i])
-                    print(i, " score: ", score)
-                    self.articolor = self.scoretocolor(score, True)
-                    if(score > bestscore):
-                        bestscore = score
-                        move = i
-            print("\n")
+            while(not que.empty()):
+                score, i = que.get()
+                print(i, " score: ", score)
+                self.articolor = self.scoretocolor(score, True)
+                if(score > bestscore):
+                    bestscore = score
+                    move = i
+            print("\n", end='')
             return move
 
 
